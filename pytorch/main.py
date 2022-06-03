@@ -22,6 +22,21 @@ from data_generator import GtzanDataset, TrainSampler, EvaluateSampler, collate_
 from models import Transfer_Cnn14
 from evaluate import Evaluator
 
+from utilities import (create_folder, get_filename, create_logging, Mixup, 
+    StatisticsContainer)
+from models import (Cnn14, Cnn14_no_specaug, Cnn14_no_dropout, 
+    Cnn6, Cnn10, ResNet22, ResNet38, ResNet54, Cnn14_emb512, Cnn14_emb128, 
+    Cnn14_emb32, MobileNetV1, MobileNetV2, LeeNet11, LeeNet24, DaiNet19, 
+    Res1dNet31, Res1dNet51, Wavegram_Cnn14, Wavegram_Logmel_Cnn14, 
+    Wavegram_Logmel128_Cnn14, Cnn14_16k, Cnn14_8k, Cnn14_mel32, Cnn14_mel128, 
+    Cnn14_mixup_time_domain, Cnn14_DecisionLevelMax, Cnn14_DecisionLevelAtt)
+from pytorch_utils import (move_data_to_device, count_parameters, count_flops, 
+    do_mixup)
+from data_generator import (AudioSetDataset, TrainSampler, BalancedTrainSampler, 
+    AlternateTrainSampler, EvaluateSampler, collate_fn)
+from evaluate import Evaluator
+import config
+from losses import get_loss_func
 
 def train(args):
 
@@ -38,14 +53,27 @@ def train(args):
     batch_size = args.batch_size
     resume_iteration = args.resume_iteration
     stop_iteration = args.stop_iteration
-    suffix = args.suffix
+    data_type = args.data_type
+    sample_rate = args.sample_rate
+    window_size = args.window_size
+    hop_size = args.hop_size
+    mel_bins = args.mel_bins
+    fmin = args.fmin
+    fmax = args.fmax
+    model_type = args.model_type
+    loss_type = args.loss_type
+    balanced = args.balanced
+    learning_rate = args.learning_rate
+    resume_iteration = args.resume_iteration
+    early_stop = args.early_stop
     device = 'cuda' if (args.cuda and torch.cuda.is_available()) else 'cpu'
     filename = args.filename
     num_workers = 8
 
     loss_func = get_loss_func(loss_type)
     pretrain = True if pretrained_checkpoint_path else False
-    
+    clip_samples = config.clip_samples
+    classes_num = config.classes_num
     hdf5_path = os.path.join(workspace, f'/content/features/', 'minidata_waveform.h5')
 
     checkpoints_dir = os.path.join(workspace, 'checkpoints', filename, 
@@ -55,10 +83,12 @@ def train(args):
     create_folder(checkpoints_dir)
 
     statistics_path = os.path.join(workspace, 'statistics', filename, 
-        'holdout_fold={}'.format(holdout_fold), model_type, 'pretrain={}'.format(pretrain), 
-        'loss_type={}'.format(loss_type), 'augmentation={}'.format(augmentation), 
-        'batch_size={}'.format(batch_size), 'freeze_base={}'.format(freeze_base), 
-        'statistics.pickle')
+        'sample_rate={},window_size={},hop_size={},mel_bins={},fmin={},fmax={}'.format(
+        sample_rate, window_size, hop_size, mel_bins, fmin, fmax), 
+        'data_type={}'.format(data_type), model_type, 
+        'loss_type={}'.format(loss_type), 'balanced={}'.format(balanced), 
+        'augmentation={}'.format(augmentation), 'batch_size={}'.format(batch_size), 
+        'statistics.pkl')
     create_folder(os.path.dirname(statistics_path))
     
     logs_dir = os.path.join(workspace, 'logs', filename, 
@@ -157,7 +187,8 @@ def train(args):
                 logging.info('Validate accuracy: {:.3f}'.format(statistics['accuracy']))
                 logging.info('Validate loss: {:.5f}'.format(statistics['loss']))
 
-                statistics_container.append(iteration, statistics, 'validate')
+                statistics_container.append(iteration, bal_statistics, data_type='bal')
+                statistics_container.append(iteration, test_statistics, data_type='test')
                 statistics_container.dump()
 
                 train_time = train_fin_time - train_bgn_time
