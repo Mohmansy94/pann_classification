@@ -46,7 +46,7 @@ def train(args):
     loss_func = get_loss_func(loss_type)
     pretrain = True if pretrained_checkpoint_path else False
     
-    hdf5_path = os.path.join(workspace, f'features{suffix}', 'minidata_waveform.h5')
+    hdf5_path = os.path.join(workspace, f'/content/features/', 'minidata_waveform.h5')
 
     checkpoints_dir = os.path.join(workspace, 'checkpoints', filename, 
         'holdout_fold={}'.format(holdout_fold), model_type, 'pretrain={}'.format(pretrain), 
