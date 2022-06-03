@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.insert(1, os.path.join(sys.path[0], '../utils'))
+sys.path.insert(1, os.path.join(sys.path[0], '/content/pann_classification/utils'))
 import numpy as np
 import argparse
 import time
@@ -12,13 +12,13 @@ import torch.nn as nn
 import torch.utils.data
 import torch.nn.functional as F
 import torch.optim as optim
- 
+from data_generator import GtzanDataset, TrainSampler, EvaluateSampler, collate_fn
+
 from config import (sample_rate, classes_num, mel_bins, fmin, fmax, window_size, 
     hop_size, window, pad_mode, center, ref, amin, top_db)
 from losses import get_loss_func
 from pytorch_utils import move_data_to_device, do_mixup
 from utilities import (create_folder, get_filename, create_logging, StatisticsContainer, Mixup)
-from data_generator import GtzanDataset, TrainSampler, EvaluateSampler, collate_fn
 from models import Transfer_Cnn14
 from evaluate import Evaluator
 
@@ -27,8 +27,7 @@ from utilities import (create_folder, get_filename, create_logging, Mixup,
 
 from pytorch_utils import (move_data_to_device, count_parameters, count_flops, 
     do_mixup)
-from data_generator import (AudioSetDataset, TrainSampler, BalancedTrainSampler, 
-    AlternateTrainSampler, EvaluateSampler, collate_fn)
+
 from evaluate import Evaluator
 import config
 from losses import get_loss_func
@@ -48,19 +47,6 @@ def train(args):
     batch_size = args.batch_size
     resume_iteration = args.resume_iteration
     stop_iteration = args.stop_iteration
-    data_type = args.data_type
-    sample_rate = args.sample_rate
-    window_size = args.window_size
-    hop_size = args.hop_size
-    mel_bins = args.mel_bins
-    fmin = args.fmin
-    fmax = args.fmax
-    model_type = args.model_type
-    loss_type = args.loss_type
-    balanced = args.balanced
-    learning_rate = args.learning_rate
-    resume_iteration = args.resume_iteration
-    early_stop = args.early_stop
     device = 'cuda' if (args.cuda and torch.cuda.is_available()) else 'cpu'
     filename = args.filename
     num_workers = 8
@@ -80,8 +66,7 @@ def train(args):
     statistics_path = os.path.join(workspace, 'statistics', filename, 
         'sample_rate={},window_size={},hop_size={},mel_bins={},fmin={},fmax={}'.format(
         sample_rate, window_size, hop_size, mel_bins, fmin, fmax), 
-        'data_type={}'.format(data_type), model_type, 
-        'loss_type={}'.format(loss_type), 'balanced={}'.format(balanced), 
+        'loss_type={}'.format(loss_type), 
         'augmentation={}'.format(augmentation), 'batch_size={}'.format(batch_size), 
         'statistics.pkl')
     create_folder(os.path.dirname(statistics_path))
