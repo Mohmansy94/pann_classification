@@ -163,9 +163,14 @@ def train(args):
 
                 train_fin_time = time.time()
 
-                statistics = evaluator.evaluate(validate_loader)
-                logging.info('Validate accuracy: {:.3f}'.format(statistics['accuracy']))
-                logging.info('Validate loss: {:.5f}'.format(statistics['loss']))
+                bal_statistics = evaluator.evaluate(eval_bal_loader)
+                test_statistics = evaluator.evaluate(eval_test_loader)
+                            
+                logging.info('Validate bal mAP: {:.3f}'.format(
+                np.mean(bal_statistics['average_precision'])))
+  
+                logging.info('Validate test mAP: {:.3f}'.format(
+                np.mean(test_statistics['average_precision'])))
 
                 statistics_container.append(iteration, bal_statistics, data_type='bal')
                 statistics_container.append(iteration, test_statistics, data_type='test')
