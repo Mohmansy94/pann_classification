@@ -115,6 +115,9 @@ class StatisticsContainer(object):
                 
         self.statistics_dict = resume_statistics_dict
 
+def d_prime(auc):
+    d_prime = stats.norm().ppf(auc) * np.sqrt(2.0)
+    return d_prime
 
 class Mixup(object):
     def __init__(self, mixup_alpha, random_seed=1234):
